@@ -172,7 +172,85 @@ async def remauth(bot, message):
         await message.reply_text(f"**Successfully removed user {user_to_remove} from authorized users.**")
     except Exception as e:
         await message.reply_text(f"**Error updating authorized users: {str(e)}**")
-        
+
+@bot.on_message(filters.command(["addadmin"]))
+async def addadmin(bot, message):
+    user_id = message.from_user.id
+
+    # Only existing admins can add new admins
+    if user_id not in admin_users:
+        await message.reply_text("**You are not authorized to use this command.**")
+        return
+
+    # Get the user ID to add as admin
+    try:
+        user_to_add = int(message.text.split()[1])
+    except (IndexError, ValueError):
+        await message.reply_text("**Please provide a valid Telegram ID.\nExample: /addadmin 123456789**")
+        return
+
+    if user_to_add in admin_users:
+        await message.reply_text(f"**User {user_to_add} is already an admin.**")
+        return
+
+    admin_users.append(user_to_add)
+
+    # Update config.py
+    try:
+        with open('config.py', 'r') as f:
+            lines = f.readlines()
+
+        for i, line in enumerate(lines):
+            if line.startswith('admin_users'):
+                lines[i] = f'admin_users = {admin_users}\n'
+                break
+
+        with open('config.py', 'w') as f:
+            f.writelines(lines)
+
+        await message.reply_text(f"**Successfully added user {user_to_add} to admin list.**")
+    except Exception as e:
+        await message.reply_text(f"**Error updating admin list: {str(e)}**")
+
+@bot.on_message(filters.command(["remadmin"]))
+async def remadmin(bot, message):
+    user_id = message.from_user.id
+
+    # Only admins can remove other admins
+    if user_id not in admin_users:
+        await message.reply_text("**You are not authorized to use this command.**")
+        return
+
+    # Get the user ID to remove
+    try:
+        user_to_remove = int(message.text.split()[1])
+    except (IndexError, ValueError):
+        await message.reply_text("**Please provide a valid Telegram ID.\nExample: /remadmin 123456789**")
+        return
+
+    if user_to_remove not in admin_users:
+        await message.reply_text(f"**User {user_to_remove} is not in the admin list.**")
+        return
+
+    admin_users.remove(user_to_remove)
+
+    # Update config.py
+    try:
+        with open('config.py', 'r') as f:
+            lines = f.readlines()
+
+        for i, line in enumerate(lines):
+            if line.startswith('admin_users'):
+                lines[i] = f'admin_users = {admin_users}\n'
+                break
+
+        with open('config.py', 'w') as f:
+            f.writelines(lines)
+
+        await message.reply_text(f"**Successfully removed user {user_to_remove} from admin list.**")
+    except Exception as e:
+        await message.reply_text(f"**Error updating admin list: {str(e)}**")
+            
 @bot.on_message(group=2)
 #async def account_login(bot: Client, m: Message):
 #    try:
